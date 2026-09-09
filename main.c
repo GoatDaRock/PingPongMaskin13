@@ -11,7 +11,7 @@ int main(void)
 
     while (1)
     {
-        printf("Hello");
+        printf("A");
     }
 
     return 0;
