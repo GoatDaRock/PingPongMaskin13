@@ -41,12 +41,15 @@
 #include "adc.h"
 #include <stdbool.h>
 #include "uart.h"
+#include "sram.h"
+#include "io.h"
 
 int main(void)
 {
 	uart_init();
     fdevopen(uart_putchar, uart_getchar);
 
+	xmem_init();
 	adc_init();
 
     /*
@@ -60,13 +63,15 @@ int main(void)
      */
     oled_init();
 
+	io_joystick_t joystick;
+    io_buttons_t buttons;
 
 
 
-	char options[3][10] = {"OPTION 1", "OPTION 2", "OPTION 3"};
+	char options[5][10] = {"OPTION 1", "OPTION 2", "OPTION 3", "OPTION 4", "OPTION 5"};
 
 	int selected = 0;
-	int number_of_options = 3;
+	int number_of_options = 5;
 	bool menu_can_change = true;
 
 	write_display:
@@ -82,12 +87,14 @@ int main(void)
 		oled_goto_line(0);
 		oled_goto_column(0);
 
-		oled_printf("USER INTERFACE:");
+		oled_printf("USER INTERFACE: (%u)", selected+1);
 		for (int i = 0; i < number_of_options; i++){
 			oled_goto_line(i+1);
 			oled_goto_column(0);
 			if (selected == i){
 				oled_printf("* ");
+			} else {
+				oled_printf(". ");
 			}
 			oled_printf(options[i]);
 		}
@@ -97,24 +104,32 @@ int main(void)
 
 		adc_data_t adc = adc_read_all();
 		uint8_t adc_y = adc.joy_y;
-		printf("joy_y: %u\r\n", adc_y);
-		for (volatile uint32_t i = 0; i < 50000; i++){}
+
+		joystick = io_read_joystick();
+
+        buttons = io_read_buttons();
+
+		oled_goto_line(6);
+        oled_goto_column(0);
+		oled_printf("JOY B: %3u  ", joystick.btn);
+
+		oled_goto_line(7);
+        oled_goto_column(0);
+		oled_printf("LEFT:  %u , RIGHT: %u", buttons.left, buttons.right);
 
 		if (!menu_can_change){
-			if (adc_y > 100 && adc_y < 200){
+			if (adc_y > 120 && adc_y < 200){
 				menu_can_change = true;
 			}
 			continue;
 		}
-		if (adc_y > 200 && selected < number_of_options -1) {
-			printf("select next\n");
-			selected++;
+		if (adc_y > 200 && selected > 0) {
+			selected--;
 			menu_can_change = false;
 			goto write_display;
 		}
-		if (adc_y < 100 && selected > 0){
-			printf("select previous\n");
-			selected--;
+		if (adc_y < 120 && selected < number_of_options-1){
+			selected++;
 			menu_can_change = false;
 			goto write_display;
 		}
