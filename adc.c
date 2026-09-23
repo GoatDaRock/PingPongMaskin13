@@ -64,8 +64,8 @@ adc_data_t adc_read_all(void)
 
     data.joy_y = *ADC_BASE;
     data.joy_x = *ADC_BASE;
-    data.pad_x = *ADC_BASE;
     data.pad_y = *ADC_BASE;
+    data.pad_x = *ADC_BASE;
 
     return data;
 }
