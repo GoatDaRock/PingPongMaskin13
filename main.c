@@ -43,6 +43,7 @@
 #include "uart.h"
 #include "sram.h"
 #include "io.h"
+#include "can.h"
 
 int main(void)
 {
@@ -56,9 +57,21 @@ int main(void)
      * Initialize ATmega162 SPI.
      */
     spi_init();
+	can_init();
 
+	can_message_t message = {0x05, {"Hello, CAN!"}, 14};
 
-    /*
+	can_send_message(message);
+
+	can_message_t received_message = can_receive_message();
+
+	printf("Received message: ID=0x%X, Length=%u, Data=", received_message.id, received_message.length);
+	for (int i = 0; i < received_message.length; i++)
+	{
+		printf("%u ", i);
+	}
+	printf("\r\n");
+	/*
      * Initialize SSD1309 OLED.
      */
     oled_init();
