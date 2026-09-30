@@ -61,7 +61,7 @@ void mcp2515_request_to_send(bool TXB0, bool TXB1, bool TXB2)
 	}
 
 	spi_select_slave(CAN_CTRL);
-	spi_transfer(MCP2515_RTS | (1 << tx_buffer));
+	spi_transfer(MCP2515_RTS | tx_buffer);
 	spi_deselect_all();
 }
 

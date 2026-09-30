@@ -1,70 +1,120 @@
 #include "mcp2515.h"
 #include "can.h"
+
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
+
+#define CANCTRL   0x0F
+#define CANSTAT   0x0E
+#define CANINTF   0x2C
+
+#define TXB0SIDH  0x31
+#define TXB0SIDL  0x32
+#define TXB0DLC   0x35
+#define TXB0D0    0x36
+
+#define RXB0SIDH  0x61
+#define RXB0SIDL  0x62
+#define RXB0DLC   0x65
+#define RXB0D0    0x66
+
+#define CAN_LOOPBACK_MODE 0x40
+
 
 void can_init(void)
 {
-	/*
-	 * Reset the MCP2515 to enter configuration mode.
-	 */
+/*
 	mcp2515_reset();
 
-	/*
-	 * Set the CAN controller to normal mode.
-	 */
-	mcp2515_write(CANCTRL, CAN_OPERATIONAL_MODE);
+    /* Request loopback mode */
+    mcp2515_write(CANCTRL, CAN_LOOPBACK_MODE);
+
+    /* Wait until loopback mode is active */
+    //while ((mcp2515_read(CANSTAT) & 0xE0) != CAN_LOOPBACK_MODE)
+    //{
+
+	//}
 }
+
 
 void can_send_message(can_message_t message)
 {
-	/*
-	 * Load the message into the transmit buffer.
-	 */
-	mcp2515_write(0x31, (message.id >> 3) & 0xFF); // TXB0SIDH
-	mcp2515_write(0x32, (message.id << 5) & 0xE0); // TXB0SIDL
-	mcp2515_write(0x35, message.length & 0x0F);    // TXB0DLC
+    uint8_t i;
 
-	for (uint8_t i = 0; i < message.length; i++)
-	{
-		mcp2515_write(0x36 + i, message.data[i]); // TXB0Dm
-	}
+    if (message.length > 8)
+    {
+        message.length = 8;
+    }
 
-	/*
-	 * Request to send the message.
-	 */
-	mcp2515_request_to_send(true, false, false);
+    /* Standard 11-bit identifier */
+    mcp2515_write(TXB0SIDH,
+                  (uint8_t)(message.id >> 3));
+
+    mcp2515_write(TXB0SIDL,
+                  (uint8_t)((message.id & 0x07) << 5));
+
+    /* Data length */
+    mcp2515_write(TXB0DLC,
+                  message.length & 0x0F);
+
+    /* Data */
+    for (i = 0; i < message.length; i++)
+    {
+        mcp2515_write(TXB0D0 + i,
+                      message.data[i]);
+    }
+
+    /* Transmit TX buffer 0 */
+    mcp2515_request_to_send(true, false, false);
 }
+
 
 can_message_t can_receive_message(void)
 {
-	can_message_t message;
+    can_message_t message;
 
-	/*
-	 * Check if a message has been received.
-	 */
-	uint8_t status = mcp2515_read_status();
-	if (!(status & 0x01)) // RX0IF
-	{
-		return (can_message_t){0, "No message received", 20}; // No message received
-	}
+    uint8_t i;
+    uint8_t sidh;
+    uint8_t sidl;
 
-	/*
-	 * Read the message from the receive buffer.
-	 */
-	message.id = (mcp2515_read(0x61) << 3) | (mcp2515_read(0x62) >> 5); // RXB0SIDH and RXB0SIDL
-	message.length = mcp2515_read(0x65) & 0x0F;                        // RXB0DLC
 
-	for (uint8_t i = 0; i < message.length; i++)
-	{
-		message.data[i] = mcp2515_read(0x66 + i); // RXB0Dm
-	}
+    /* Wait for message in RX buffer 0 */
+    while (!(mcp2515_read(CANINTF) & 0x01))
+    {
+    }
 
-	/*
-	 * Clear the receive flag.
-	 */
-	mcp2515_bit_modify(0x2C, 0x01, 0x00); // CANINTF
 
-	return message;
+    sidh = mcp2515_read(RXB0SIDH);
+    sidl = mcp2515_read(RXB0SIDL);
+
+    message.id =
+        ((uint16_t)sidh << 3) |
+        (sidl >> 5);
+
+
+    message.length =
+        mcp2515_read(RXB0DLC) & 0x0F;
+
+    if (message.length > 8)
+    {
+        message.length = 8;
+    }
+
+
+    for (i = 0; i < message.length; i++)
+    {
+        message.data[i] =
+            mcp2515_read(RXB0D0 + i);
+    }
+
+
+    /* Clear RX0IF */
+    mcp2515_bit_modify(
+        CANINTF,
+        0x01,
+        0x00
+    );
+
+
+    return message;
 }

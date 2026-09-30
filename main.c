@@ -57,20 +57,82 @@ int main(void)
      * Initialize ATmega162 SPI.
      */
     spi_init();
+	
+	
+    printf("CAN initialized in loopback mode\r\n");
 	can_init();
 
-	can_message_t message = {0x05, {"Hello, CAN!"}, 14};
 
-	can_send_message(message);
+    
 
-	can_message_t received_message = can_receive_message();
 
-	printf("Received message: ID=0x%X, Length=%u, Data=", received_message.id, received_message.length);
-	for (int i = 0; i < received_message.length; i++)
-	{
-		printf("%u ", i);
-	}
-	printf("\r\n");
+    /*
+     * Create CAN message.
+     */
+    can_message_t message;
+
+    message.id = 0x05;
+    message.length = 3;
+
+    message.data[0] = 0x11;
+    message.data[1] = 0x22;
+    message.data[2] = 0x33;
+
+
+    /*
+     * Send CAN message.
+     */
+    printf("Sending CAN message...\r\n");
+
+    can_send_message(message);
+
+
+    /*
+     * In loopback mode, the MCP2515
+     * should receive its own message.
+     *
+     * can_receive_message() waits until
+     * RXB0 contains a message.
+     */
+    can_message_t received_message;
+
+    received_message = can_receive_message();
+	printf("Waiting for CAN message...\r\n");
+
+
+    /*
+     * Print received CAN message.
+     */
+    printf("Received CAN message:\r\n");
+
+    printf("ID     = 0x%X\r\n",
+           received_message.id);
+
+    printf("Length = %u\r\n",
+           received_message.length);
+
+    printf("Data   = ");
+
+    for (uint8_t i = 0;
+         i < received_message.length;
+         i++)
+    {
+        printf("0x%02X ",
+               received_message.data[i]);
+    }
+
+    printf("\r\n");
+
+
+    /*
+     * Nothing else to do.
+     */
+    while (1)
+    {
+    }
+
+
+    return 0;
 	/*
      * Initialize SSD1309 OLED.
      */
