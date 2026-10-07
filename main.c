@@ -44,30 +44,224 @@
 #include "sram.h"
 #include "io.h"
 #include "can.h"
+#include "mcp2515.h"
+
+// int main(void)
+// {
+// 	uart_init();
+//     fdevopen(uart_putchar, uart_getchar);
+
+// 	xmem_init();
+// 	adc_init();
+
+//     /*
+//      * Initialize ATmega162 SPI.
+//      */
+//     spi_init();
+
+	
+	// mcp2515_write(0x36, 0xAF);
+	// uint8_t value2 = mcp2515_read(0x36);
+	// printf("Read back value from MCP2515 register 0x36: 0x%02X\r\n", value2);
+	// while (1)
+	// {
+	// }
+
+
+
+
+
+	// bool can_initialized = can_init();
+	// if (!can_initialized)
+	// {
+	// 	printf("Failed to initialize CAN\r\n");
+	// 	return 1;
+	// }
+    // /*
+    //  * Create CAN message.
+    //  */
+    // can_message_t message;
+
+    // message.id = 0x05;
+    // message.length = 3;
+
+    // message.data[0] = 0x11;
+    // message.data[1] = 0x22;
+    // message.data[2] = 0x33;
+
+
+    // /*
+    //  * Send CAN message.
+    //  */
+    // printf("Sending CAN message...\r\n");
+
+    // bool message_sent = can_send_message(&message);
+	// if (!message_sent)
+	// {
+	// 	printf("Failed to send CAN message\r\n");
+	// 	return 1;
+	// }
+
+    // /*
+    //  * In loopback mode, the MCP2515
+    //  * should receive its own message.
+    //  *
+    //  * can_receive_message() waits until
+    //  * RXB0 contains a message.
+    //  */
+    // can_message_t received_message;
+
+    // bool received = can_receive_message(&received_message);
+
+
+    // /*
+    //  * Print received CAN message.
+    //  */
+	// if (!received)
+	// {
+	// 	printf("No CAN message received\r\n");
+	// 	return 1;
+	// }
+    // printf("Received CAN message:\r\n");
+
+    // printf("ID     = 0x%X\r\n",
+    //        received_message.id);
+
+    // printf("Length = %u\r\n",
+    //        received_message.length);
+
+    // printf("Data   = ");
+
+    // for (uint8_t i = 0;
+    //      i < received_message.length;
+    //      i++)
+    // {
+    //     printf("0x%02X ",
+    //            received_message.data[i]);
+    // }
+
+    // printf("\r\n");
+
+	/*
+     * Initialize SSD1309 OLED.
+     */
+//     oled_init();
+
+// 	io_joystick_t joystick;
+//     io_buttons_t buttons;
+
+
+
+// 	char options[5][10] = {"OPTION 1", "OPTION 2", "OPTION 3", "OPTION 4", "OPTION 5"};
+
+// 	int selected = 0;
+// 	int number_of_options = 5;
+// 	bool menu_can_change = true;
+
+// 	write_display:
+// 		/*
+// 		* Clear old contents.
+// 		*/
+// 		oled_clear();
+
+
+// 		/*
+// 		* LINE 0
+// 		*/
+// 		oled_goto_line(0);
+// 		oled_goto_column(0);
+
+// 		oled_printf("USER INTERFACE: (%u)", selected+1);
+// 		for (int i = 0; i < number_of_options; i++){
+// 			oled_goto_line(i+1);
+// 			oled_goto_column(0);
+// 			if (selected == i){
+// 				oled_printf("* ");
+// 			} else {
+// 				oled_printf(". ");
+// 			}
+// 			oled_printf(options[i]);
+// 		}
+
+//     while (1)
+//     {
+
+// 		adc_data_t adc = adc_read_all();
+// 		uint8_t adc_y = adc.joy_y;
+
+// 		joystick = io_read_joystick();
+
+//         buttons = io_read_buttons();
+
+// 		oled_goto_line(6);
+//         oled_goto_column(0);
+// 		oled_printf("JOY B: %3u  ", joystick.btn);
+
+// 		oled_goto_line(7);
+//         oled_goto_column(0);
+// 		oled_printf("LEFT:  %u , RIGHT: %u", buttons.left, buttons.right);
+
+// 		if (!menu_can_change){
+// 			if (adc_y > 120 && adc_y < 200){
+// 				menu_can_change = true;
+// 			}
+// 			continue;
+// 		}
+// 		if (adc_y > 200 && selected > 0) {
+// 			selected--;
+// 			menu_can_change = false;
+// 			goto write_display;
+// 		}
+// 		if (adc_y < 120 && selected < number_of_options-1){
+// 			selected++;
+// 			menu_can_change = false;
+// 			goto write_display;
+// 		}
+//     }
+
+
+//     return 0;
+// }
+
+
+
 
 int main(void)
 {
-	uart_init();
+    /*
+     * UART for terminal output
+     */
+    uart_init();
     fdevopen(uart_putchar, uart_getchar);
 
 	xmem_init();
-	adc_init();
+  	adc_init();
 
     /*
-     * Initialize ATmega162 SPI.
+     * Initialize SPI
      */
     spi_init();
-	
-	
-    printf("CAN initialized in loopback mode\r\n");
-	can_init();
 
-
-    
+    printf("Starting CAN loopback test\r\n");
 
 
     /*
-     * Create CAN message.
+     * Initialize MCP2515 in loopback mode
+     */
+    if (!can_init())
+    {
+        printf("ERROR: CAN initialization failed\r\n");
+
+        while (1)
+        {
+        }
+    }
+
+    printf("MCP2515 initialized in loopback mode\r\n");
+
+
+    /*
+     * Create CAN message
      */
     can_message_t message;
 
@@ -80,136 +274,60 @@ int main(void)
 
 
     /*
-     * Send CAN message.
+     * Send CAN message
      */
     printf("Sending CAN message...\r\n");
 
-    can_send_message(message);
+    if (!can_send_message(&message))
+    {
+        printf("ERROR: CAN send failed\r\n");
+
+        while (1)
+        {
+        }
+    }
 
 
     /*
-     * In loopback mode, the MCP2515
-     * should receive its own message.
+     * Wait for message to appear in RX buffer.
      *
-     * can_receive_message() waits until
-     * RXB0 contains a message.
+     * In loopback mode, the MCP2515 internally sends
+     * the TX message back into its receive buffer.
      */
     can_message_t received_message;
 
-    received_message = can_receive_message();
-	printf("Waiting for CAN message...\r\n");
+    while (!can_receive_message(&received_message))
+    {
+    }
 
 
     /*
-     * Print received CAN message.
+     * Print received message
      */
     printf("Received CAN message:\r\n");
 
-    printf("ID     = 0x%X\r\n",
-           received_message.id);
+    printf("ID     = 0x%lX\r\n",
+           (unsigned long)received_message.id);
 
     printf("Length = %u\r\n",
            received_message.length);
 
     printf("Data   = ");
 
-    for (uint8_t i = 0;
-         i < received_message.length;
-         i++)
+    for (uint8_t i = 0; i < received_message.length; i++)
     {
-        printf("0x%02X ",
-               received_message.data[i]);
+        printf("0x%02X ", received_message.data[i]);
     }
 
     printf("\r\n");
 
 
     /*
-     * Nothing else to do.
+     * Finished
      */
     while (1)
     {
     }
-
-
-    return 0;
-	/*
-     * Initialize SSD1309 OLED.
-     */
-    oled_init();
-
-	io_joystick_t joystick;
-    io_buttons_t buttons;
-
-
-
-	char options[5][10] = {"OPTION 1", "OPTION 2", "OPTION 3", "OPTION 4", "OPTION 5"};
-
-	int selected = 0;
-	int number_of_options = 5;
-	bool menu_can_change = true;
-
-	write_display:
-		/*
-		* Clear old contents.
-		*/
-		oled_clear();
-
-
-		/*
-		* LINE 0
-		*/
-		oled_goto_line(0);
-		oled_goto_column(0);
-
-		oled_printf("USER INTERFACE: (%u)", selected+1);
-		for (int i = 0; i < number_of_options; i++){
-			oled_goto_line(i+1);
-			oled_goto_column(0);
-			if (selected == i){
-				oled_printf("* ");
-			} else {
-				oled_printf(". ");
-			}
-			oled_printf(options[i]);
-		}
-
-    while (1)
-    {
-
-		adc_data_t adc = adc_read_all();
-		uint8_t adc_y = adc.joy_y;
-
-		joystick = io_read_joystick();
-
-        buttons = io_read_buttons();
-
-		oled_goto_line(6);
-        oled_goto_column(0);
-		oled_printf("JOY B: %3u  ", joystick.btn);
-
-		oled_goto_line(7);
-        oled_goto_column(0);
-		oled_printf("LEFT:  %u , RIGHT: %u", buttons.left, buttons.right);
-
-		if (!menu_can_change){
-			if (adc_y > 120 && adc_y < 200){
-				menu_can_change = true;
-			}
-			continue;
-		}
-		if (adc_y > 200 && selected > 0) {
-			selected--;
-			menu_can_change = false;
-			goto write_display;
-		}
-		if (adc_y < 120 && selected < number_of_options-1){
-			selected++;
-			menu_can_change = false;
-			goto write_display;
-		}
-    }
-
 
     return 0;
 }
