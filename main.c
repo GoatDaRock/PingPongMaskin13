@@ -46,6 +46,8 @@
 #include "can.h"
 #include "mcp2515.h"
 
+
+#define JOYSTICK_CAN_ID 0x10
 // int main(void)
 // {
 // 	uart_init();
@@ -223,7 +225,22 @@
 //     return 0;
 // }
 
+void send_joystick_position_over_can(void)
+{
+	adc_data_t adc = adc_read_all();
+	can_message_t joystick_message;
+	joystick_message.id = JOYSTICK_CAN_ID;
+	joystick_message.length = 2;
+	joystick_message.data[0] = adc.joy_x;
+	joystick_message.data[1] = adc.joy_y;
 
+	if (!can_send_message(&joystick_message))
+	{
+		printf("ERROR: CAN send failed for joystick message\r\n");
+		return;
+	}
+	printf("Sent joystick position over CAN: X=%u, Y=%u\r\n", adc.joy_x, adc.joy_y);
+}
 
 
 int main(void)
@@ -242,8 +259,6 @@ int main(void)
      */
     spi_init();
 
-    printf("Starting CAN loopback test\r\n");
-
 
     /*
      * Initialize MCP2515 in loopback mode
@@ -251,14 +266,10 @@ int main(void)
     if (!can_init())
     {
         printf("ERROR: CAN initialization failed\r\n");
-
-        while (1)
-        {
-        }
+		return 1;
     }
 
-    printf("MCP2515 initialized in loopback mode\r\n");
-
+	printf("CAN initialized successfully\r\n");
 
     /*
      * Create CAN message
@@ -281,52 +292,38 @@ int main(void)
     if (!can_send_message(&message))
     {
         printf("ERROR: CAN send failed\r\n");
-
-        while (1)
-        {
-        }
+		return 1;
     }
+	printf("CAN message sent successfully\r\n");
 
 
-    /*
-     * Wait for message to appear in RX buffer.
-     *
-     * In loopback mode, the MCP2515 internally sends
-     * the TX message back into its receive buffer.
-     */
-    can_message_t received_message;
+	// receive CAN message
+	can_message_t received_message;
 
-    while (!can_receive_message(&received_message))
-    {
-    }
+	while (!can_receive_message(&received_message))
+	{
+		printf("Waiting for CAN message...\r\n");
+	}
+
+	printf("Received CAN message:\r\n");
+	printf("ID     = 0x%X\r\n", received_message.id);
+	printf("Length = %u\r\n", received_message.length);
+	printf("Data   = ");
+	for (uint8_t i = 0; i < received_message.length; i++)
+	{
+		printf("0x%02X ", received_message.data[i]);
+	}
+	printf("\r\n");
 
 
-    /*
-     * Print received message
-     */
-    printf("Received CAN message:\r\n");
-
-    printf("ID     = 0x%lX\r\n",
-           (unsigned long)received_message.id);
-
-    printf("Length = %u\r\n",
-           received_message.length);
-
-    printf("Data   = ");
-
-    for (uint8_t i = 0; i < received_message.length; i++)
-    {
-        printf("0x%02X ", received_message.data[i]);
-    }
-
-    printf("\r\n");
-
+	// send joystick position over CAN
 
     /*
      * Finished
      */
     while (1)
     {
+		send_joystick_position_over_can();
     }
 
     return 0;

@@ -29,6 +29,7 @@
 #define CNF3         0x28
 #define CAN_CONFIG_MODE      0x80
 #define CAN_LOOPBACK_MODE    0x40	
+#define CAN_NORMAL_MODE      0x00
 
 
 bool can_init(void)
@@ -38,10 +39,6 @@ bool can_init(void)
     /*
      * RESET places the MCP2515 in Configuration mode.
      */
-    
-	mcp2515_write(0x36, 0xAF);
-	uint8_t value2 = mcp2515_read(0x36);
-	printf("Read back value from MCP2515 register 0x36: 0x%02X\r\n", value2);
 
 	status = mcp2515_read(CANSTAT);
 	printf("CANSTAT before reset = 0x%02X\r\n", status);
@@ -67,7 +64,7 @@ bool can_init(void)
     //     status = mcp2515_read(CANSTAT);
 
     //     if ((status & 0xE0) == CAN_CONFIG_MODE)
-	mcp2515_write(CANCTRL, CAN_CONFIG_MODE);
+	mcp2515_write(CANCTRL, CAN_NORMAL_MODE);
 
 	_delay_ms(10); // Wait for the MCP2515 to enter configuration mode
     //     {
@@ -76,40 +73,30 @@ bool can_init(void)
     //}
 
 	status = mcp2515_read(CANSTAT);
+	if ((status & 0xE0) != CAN_NORMAL_MODE)
+	{
+		printf("Failed to enter CAN normal mode. Status: 0x%02X\r\n", status);
+		return false;
+	}
 
 	
-    if ((status & 0xE0) != CAN_CONFIG_MODE)
-    {
-		printf("Failed to enter CAN configuration mode. Status: 0x%02X\r\n", status);
-        return false;
-    }
-	printf("Successfully entered CAN configuration mode. Status: 0x%02X\r\n", status);
+    // if ((status & 0xE0) != CAN_CONFIG_MODE)
+    // {
+	// 	printf("Failed to enter CAN configuration mode. Status: 0x%02X\r\n", status);
+    //     return false;
+    // }
+	// printf("Successfully entered CAN configuration mode. Status: 0x%02X\r\n", status);
 
 	//Fosc = 16MHz 
-	mcp2515_write(CNF1, 0x03); //  
+	mcp2515_write(CNF1, 0x03); //Set CNF1 register for 125kbps
     mcp2515_write(CNF2, 0xB1); 
-    mcp2515_write(CNF3, 0x05);
+    mcp2515_write(CNF3, 0x05); 
     /*
      * Request Loopback mode:
      * CANCTRL.REQOP<2:0> = 010.
      */
-    mcp2515_write(CANCTRL, CAN_LOOPBACK_MODE);
-	printf("CANSTAT after setting loopback mode = 0x%02X\r\n", mcp2515_read(CANSTAT));
-
-    /*
-     * Verify the actual mode through CANSTAT.OPMOD.
-     */
-    for (uint16_t i = 0; i < 1000; i++)
-    {
-        status = mcp2515_read(CANSTAT);
-
-        if ((status & 0xE0) == CAN_LOOPBACK_MODE)
-        {
-            return true;
-        }
-    }
-	printf("Failed to enter CAN loopback mode. Status: 0x%02X\r\n", status);
-
+    //mcp2515_write(CANCTRL, CAN_LOOPBACK_MODE);
+	
     return false;
 }
 
