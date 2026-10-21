@@ -64,6 +64,12 @@ bool can_init(void)
     //     status = mcp2515_read(CANSTAT);
 
     //     if ((status & 0xE0) == CAN_CONFIG_MODE)
+
+
+	mcp2515_write(CNF1, 0x03); //Set CNF1 register for 125kbps
+    mcp2515_write(CNF2, 0xB1); 
+    mcp2515_write(CNF3, 0x05); 
+
 	mcp2515_write(CANCTRL, CAN_NORMAL_MODE);
 
 	_delay_ms(10); // Wait for the MCP2515 to enter configuration mode
@@ -88,16 +94,13 @@ bool can_init(void)
 	// printf("Successfully entered CAN configuration mode. Status: 0x%02X\r\n", status);
 
 	//Fosc = 16MHz 
-	mcp2515_write(CNF1, 0x03); //Set CNF1 register for 125kbps
-    mcp2515_write(CNF2, 0xB1); 
-    mcp2515_write(CNF3, 0x05); 
     /*
      * Request Loopback mode:
      * CANCTRL.REQOP<2:0> = 010.
      */
     //mcp2515_write(CANCTRL, CAN_LOOPBACK_MODE);
 	
-    return false;
+    return true;
 }
 
 bool can_send_message(const can_message_t *message)

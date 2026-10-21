@@ -297,25 +297,6 @@ int main(void)
 	printf("CAN message sent successfully\r\n");
 
 
-	// receive CAN message
-	can_message_t received_message;
-
-	while (!can_receive_message(&received_message))
-	{
-		printf("Waiting for CAN message...\r\n");
-	}
-
-	printf("Received CAN message:\r\n");
-	printf("ID     = 0x%X\r\n", received_message.id);
-	printf("Length = %u\r\n", received_message.length);
-	printf("Data   = ");
-	for (uint8_t i = 0; i < received_message.length; i++)
-	{
-		printf("0x%02X ", received_message.data[i]);
-	}
-	printf("\r\n");
-
-
 	// send joystick position over CAN
 
     /*
