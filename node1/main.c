@@ -1,39 +1,310 @@
-#define F_CPU 4915200UL
+// #include <avr/io.h>
+// #include <stdio.h>
+// #include "uart.h"
+// #include "test.h"
+// #include "sram.h"
+// #include "adc.h"
+
+// int main(void)
+// {
+//     uart_init();
+//     fdevopen(uart_putchar, uart_getchar);
+
+   
+// 	xmem_init();
+
+//     SRAM_test();
+	
+// 	adc_init();
+// 	while (1)
+//     {
+//         adc_data_t adc = adc_read_all();
+
+//         printf("JOY_X: %u  JOY_Y: %u  PAD_X: %u  PAD_Y: %u\r\n",
+//                adc.joy_x,
+//                adc.joy_y,
+//                adc.pad_x,
+//                adc.pad_y);
+
+//         // Just slow down terminal printing
+//         for (volatile uint32_t i = 0; i < 50000; i++)
+//         {
+//         }
+//     }
+// 	return 0;
+// }
 
 #include <avr/io.h>
-#include <util/delay.h>
 
-void uart_init(void)
+#include "spi.h"
+#include "oled.h"
+#include "adc.h"
+#include <stdbool.h>
+#include "uart.h"
+#include "sram.h"
+#include "io.h"
+#include "can.h"
+#include "mcp2515.h"
+
+
+#define JOYSTICK_CAN_ID 0x10
+// int main(void)
+// {
+// 	uart_init();
+//     fdevopen(uart_putchar, uart_getchar);
+
+// 	xmem_init();
+// 	adc_init();
+
+//     /*
+//      * Initialize ATmega162 SPI.
+//      */
+//     spi_init();
+
+	
+	// mcp2515_write(0x36, 0xAF);
+	// uint8_t value2 = mcp2515_read(0x36);
+	// printf("Read back value from MCP2515 register 0x36: 0x%02X\r\n", value2);
+	// while (1)
+	// {
+	// }
+
+
+
+
+
+	// bool can_initialized = can_init();
+	// if (!can_initialized)
+	// {
+	// 	printf("Failed to initialize CAN\r\n");
+	// 	return 1;
+	// }
+    // /*
+    //  * Create CAN message.
+    //  */
+    // can_message_t message;
+
+    // message.id = 0x05;
+    // message.length = 3;
+
+    // message.data[0] = 0x11;
+    // message.data[1] = 0x22;
+    // message.data[2] = 0x33;
+
+
+    // /*
+    //  * Send CAN message.
+    //  */
+    // printf("Sending CAN message...\r\n");
+
+    // bool message_sent = can_send_message(&message);
+	// if (!message_sent)
+	// {
+	// 	printf("Failed to send CAN message\r\n");
+	// 	return 1;
+	// }
+
+    // /*
+    //  * In loopback mode, the MCP2515
+    //  * should receive its own message.
+    //  *
+    //  * can_receive_message() waits until
+    //  * RXB0 contains a message.
+    //  */
+    // can_message_t received_message;
+
+    // bool received = can_receive_message(&received_message);
+
+
+    // /*
+    //  * Print received CAN message.
+    //  */
+	// if (!received)
+	// {
+	// 	printf("No CAN message received\r\n");
+	// 	return 1;
+	// }
+    // printf("Received CAN message:\r\n");
+
+    // printf("ID     = 0x%X\r\n",
+    //        received_message.id);
+
+    // printf("Length = %u\r\n",
+    //        received_message.length);
+
+    // printf("Data   = ");
+
+    // for (uint8_t i = 0;
+    //      i < received_message.length;
+    //      i++)
+    // {
+    //     printf("0x%02X ",
+    //            received_message.data[i]);
+    // }
+
+    // printf("\r\n");
+
+	/*
+     * Initialize SSD1309 OLED.
+     */
+//     oled_init();
+
+// 	io_joystick_t joystick;
+//     io_buttons_t buttons;
+
+
+
+// 	char options[5][10] = {"OPTION 1", "OPTION 2", "OPTION 3", "OPTION 4", "OPTION 5"};
+
+// 	int selected = 0;
+// 	int number_of_options = 5;
+// 	bool menu_can_change = true;
+
+// 	write_display:
+// 		/*
+// 		* Clear old contents.
+// 		*/
+// 		oled_clear();
+
+
+// 		/*
+// 		* LINE 0
+// 		*/
+// 		oled_goto_line(0);
+// 		oled_goto_column(0);
+
+// 		oled_printf("USER INTERFACE: (%u)", selected+1);
+// 		for (int i = 0; i < number_of_options; i++){
+// 			oled_goto_line(i+1);
+// 			oled_goto_column(0);
+// 			if (selected == i){
+// 				oled_printf("* ");
+// 			} else {
+// 				oled_printf(". ");
+// 			}
+// 			oled_printf(options[i]);
+// 		}
+
+//     while (1)
+//     {
+
+// 		adc_data_t adc = adc_read_all();
+// 		uint8_t adc_y = adc.joy_y;
+
+// 		joystick = io_read_joystick();
+
+//         buttons = io_read_buttons();
+
+// 		oled_goto_line(6);
+//         oled_goto_column(0);
+// 		oled_printf("JOY B: %3u  ", joystick.btn);
+
+// 		oled_goto_line(7);
+//         oled_goto_column(0);
+// 		oled_printf("LEFT:  %u , RIGHT: %u", buttons.left, buttons.right);
+
+// 		if (!menu_can_change){
+// 			if (adc_y > 120 && adc_y < 200){
+// 				menu_can_change = true;
+// 			}
+// 			continue;
+// 		}
+// 		if (adc_y > 200 && selected > 0) {
+// 			selected--;
+// 			menu_can_change = false;
+// 			goto write_display;
+// 		}
+// 		if (adc_y < 120 && selected < number_of_options-1){
+// 			selected++;
+// 			menu_can_change = false;
+// 			goto write_display;
+// 		}
+//     }
+
+
+//     return 0;
+// }
+
+void send_joystick_position_over_can(void)
 {
-    // 9600 baud at 4.9152 MHz
-    UBRR1H = 0;
-    UBRR1L = 31;
+	adc_data_t adc = adc_read_all();
+	can_message_t joystick_message;
+	joystick_message.id = JOYSTICK_CAN_ID;
+	joystick_message.length = 2;
+	joystick_message.data[0] = adc.joy_x;
+	joystick_message.data[1] = adc.joy_y;
 
-    // Enable transmitter on USART1
-    UCSR1B = (1 << TXEN1);
-
-    // 8 data bits, no parity, 1 stop bit
-    UCSR1C = (1 << URSEL1)
-           | (1 << UCSZ11)
-           | (1 << UCSZ10);
+	if (!can_send_message(&joystick_message))
+	{
+		printf("ERROR: CAN send failed for joystick message\r\n");
+		return;
+	}
+	printf("Sent joystick position over CAN: X=%u, Y=%u\r\n", adc.joy_x, adc.joy_y);
 }
 
-void uart_send(char c)
-{
-    while (!(UCSR1A & (1 << UDRE1)))
-    {
-    }
-
-    UDR1 = c;
-}
 
 int main(void)
 {
+    /*
+     * UART for terminal output
+     */
     uart_init();
+    fdevopen(uart_putchar, uart_getchar);
 
+	xmem_init();
+  	adc_init();
+
+    /*
+     * Initialize SPI
+     */
+    spi_init();
+
+
+    /*
+     * Initialize MCP2515 in loopback mode
+     */
+    if (!can_init())
+    {
+        printf("ERROR: CAN initialization failed\r\n");
+		return 1;
+    }
+
+	printf("CAN initialized successfully\r\n");
+
+    /*
+     * Create CAN message
+     */
+    can_message_t message;
+
+    message.id = 0x05;
+    message.length = 3;
+
+    message.data[0] = 0x11;
+    message.data[1] = 0x22;
+    message.data[2] = 0x33;
+
+
+    /*
+     * Send CAN message
+     */
+    printf("Sending CAN message...\r\n");
+
+    if (!can_send_message(&message))
+    {
+        printf("ERROR: CAN send failed\r\n");
+		return 1;
+    }
+	printf("CAN message sent successfully\r\n");
+
+
+	// send joystick position over CAN
+
+    /*
+     * Finished
+     */
     while (1)
     {
-        uart_send('A');
+		send_joystick_position_over_can();
     }
 
     return 0;
