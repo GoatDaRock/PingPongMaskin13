@@ -227,19 +227,21 @@
 
 void send_joystick_position_over_can(void)
 {
+	io_joystick_t joystick = io_read_joystick();
 	adc_data_t adc = adc_read_all();
 	can_message_t joystick_message;
 	joystick_message.id = JOYSTICK_CAN_ID;
-	joystick_message.length = 2;
+	joystick_message.length = 3;
 	joystick_message.data[0] = adc.joy_x;
 	joystick_message.data[1] = adc.joy_y;
+	joystick_message.data[2] = joystick.btn; // Optional: include joystick button state
 
 	if (!can_send_message(&joystick_message))
 	{
 		printf("ERROR: CAN send failed for joystick message\r\n");
 		return;
 	}
-	printf("Sent joystick position over CAN: X=%u, Y=%u\r\n", adc.joy_x, adc.joy_y);
+	printf("Sent joystick position over CAN: X=%u, Y=%u, Button=%u\r\n", adc.joy_x, adc.joy_y, joystick.btn);
 }
 
 
