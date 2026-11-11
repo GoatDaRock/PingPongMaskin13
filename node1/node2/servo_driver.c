@@ -25,6 +25,9 @@
  }
 
  bool servo_set_pulse_width(uint32_t pulse_width){
+	  if (pulse_width < min_pulse_width || pulse_width > max_pulse_width) {
+	return false;
+  }
   return pwm_write_duty(1, pulse_width);
  }
 

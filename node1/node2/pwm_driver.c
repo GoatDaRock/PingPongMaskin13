@@ -5,8 +5,7 @@ bool pwm_init(uint32_t clock_frequency){
 	PMC->PMC_PCER0 = (1u << ID_PIOB); // Enable clock for PIOB
 	PMC->PMC_PCER1 = (1u << (ID_PWM - 32)); // Enable clock for PWM
 	 
-	PWM->PWM_WPCR = 0x50574D00; // Write Protection Key
-	PWM->PWM_WPCR |= (1u << 2); // Disable Write Protection for PWM registers
+	PWM->PWM_WPCR = 0x50574D00 | (0x3Fu << 2); // Write Protection Key
 	PWM->PWM_DIS = 0xFFu; // Disable all PWM channels
 	PWM->PWM_IDR1 = 0xFFFFFFFFu; // Disable all PWM interrupts
 	PWM->PWM_IDR2 = 0xFFFFFFFFu; // Disable all PWM interrupts
@@ -38,8 +37,8 @@ bool pwm_start(uint8_t channel, uint32_t period, uint32_t high_time){
 	PWM->PWM_CH_NUM[channel].PWM_CDTY = high_time; // Set high time
 
 	PIOB->PIO_ABSR |= mask; // Set alternate function B for the specified channel
-	PIOB->PIO_OER = mask; // Enable output for the specified channel
-	PIOB->PIO_PER = mask; // Enable PIO control for the specified channel
+	PIOB->PIO_PUDR = mask; // Disable pull-up for the specified channel
+	PIOB->PIO_PDR = mask; // Disable PIO control for the specified channel
 
 	PWM->PWM_ENA = (1 << channel); // Enable channel
 	

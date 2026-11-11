@@ -12,6 +12,12 @@ SOURCE_FILES = \
 	can.c \
 	pwm_driver.c \
 	servo_driver.c \
+	adc_driver.c \
+	ir_driver.c \
+	encoder_driver.c \
+	motor_controller.c \
+	motor_driver.c \
+	solenoid_driver.c \
 #	../path_to/uart.c \
 #   filename1.c \
 #   filename2.c \
