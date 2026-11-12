@@ -18,6 +18,10 @@
 #define JOYSTICK_MIN 70
 #define JOYSTICK_MAX 250
 
+#define START_GAME_CAN_ID 0x20
+
+#define GAME_STATE_CAN_ID 0x30
+
 // Replace with measured ADC thresholds
 #define IR_BLOCKED_THRESHOLD 100
 #define IR_CLEAR_THRESHOLD 1000
@@ -62,53 +66,56 @@ static float normalize_encoder(uint32_t value)
            (float)(encoder_limit_high - encoder_limit_low);
 }
 
-int main(void)
+void send_game_state_over_can(uint8_t lives, uint8_t score)
 {
-    SystemInit();
+    CanMsg message;
+    message.id = GAME_STATE_CAN_ID;
+    message.length = 2; // Sending two bytes: lives and score
+    message.byte[0] = lives;
+    message.byte[1] = score;
 
-    WDT->WDT_MR = WDT_MR_WDDIS;
-
-    uart_init(84000000, 9600);
-    can_init(CAN_NODE1_125K_TIMING, 0);
-
-    if (!servo_init(1000, 2000, 84000000))
+    if (!can_send(&message))
     {
-        printf("Servo initialization failed\r\n");
-        while (1)
-        {
-        }
+        printf("ERROR: CAN send failed for game state message\r\n");
+        return;
     }
+    printf("Sent game state over CAN: Lives=%u, Score=%u\r\n", lives, score);
+}
 
-    servo_neutral();
-
-    ir_init(IR_BLOCKED_THRESHOLD,
-            IR_CLEAR_THRESHOLD);
-
-    MotorController motor_controller;
-
-    motor_controller_init(&motor_controller, 1.0f, 1.0f, 1.0f);
-    motor_init();
-
-    encoder_init();
-    solenoid_init(PIOC, (1u << 22), false);
-
-    // Configure 1 ms system tick
-    SysTick_Config(84000000u / 1000u);
-
-    printf("IR goal detection started\r\n");
-
+void run_game(void)
+{
     CanMsg message;
 
     uint32_t last_sample = milliseconds;
+    uint32_t score_sample = milliseconds;
     uint32_t last_solenoid_trigger = -SOLENOID_COOLDOWN_MS; // Initialize to allow immediate trigger
 
     // Require the beam to clear before counting
     bool previous_blocked = true;
     float joystick_x = 0.5f; // Initialize joystick_x to center position
-    while (1)
+    // Game loop logic here
+    // Existing CAN and servo control
+    solenoid_update(milliseconds); // Update solenoid state based on time
+
+    MotorController motor_controller;
+
+    motor_controller_init(&motor_controller, 1.0f, 1.0f, 1.0f);
+
+    // move motor to right for 2 seconds and reset encoder to 0
+    motor_set_speed(1.0f);
+
+    while ((int32_t)(milliseconds - last_sample) < 2000)
     {
-        // Existing CAN and servo control
-        solenoid_update(milliseconds); // Update solenoid state based on time
+        // Wait for 2 seconds
+    }
+
+    encoder_init();
+
+    uint8_t lives = 3; // Initialize lives
+    uint8_t score = 0; // Initialize score
+
+    while (lives > 0)
+    {
 
         if (can_rx(&message))
         {
@@ -119,7 +126,7 @@ int main(void)
 
                 if (message.byte[2] == 1 && (int32_t)(milliseconds - last_solenoid_trigger) >= SOLENOID_COOLDOWN_MS) // Assuming button pressed is indicated by 1
                 {
-                    solenoid_trigger(milliseconds, 10); // Trigger solenoid for 100 ms
+                    solenoid_trigger(milliseconds, 100); // Trigger solenoid for 100 ms
                     last_solenoid_trigger = milliseconds;
                 }
 
@@ -142,10 +149,8 @@ int main(void)
 
             if (blocked && !previous_blocked)
             {
-                goals++;
-                // Optional: debounce delay to avoid multiple counts for a single goal
-                printf("GOAL! Score: %lu\r\n",
-                       (unsigned long)goals);
+                lives--;
+                send_game_state_over_can(lives, score);
             }
 
             previous_blocked = blocked;
@@ -163,6 +168,56 @@ int main(void)
                    motor_speed,
                    solenoid_active ? "Yes" : "No");
             motor_set_speed(motor_speed * -1.0f);
+        }
+
+        if ((uint32_t)(now - score_sample) >= 1000u)
+        {
+            score_sample = now;
+            score++;
+            send_game_state_over_can(lives, score);
+        }
+    }
+}
+
+int main(void)
+{
+    SystemInit();
+
+    WDT->WDT_MR = WDT_MR_WDDIS;
+
+    uart_init(84000000, 9600);
+    can_init(CAN_NODE1_125K_TIMING, 0);
+
+    if (!servo_init(1000, 2000, 84000000))
+    {
+        printf("Servo initialization failed\r\n");
+        while (1)
+        {
+        }
+    }
+
+    servo_neutral();
+
+    ir_init(IR_BLOCKED_THRESHOLD,
+            IR_CLEAR_THRESHOLD);
+
+    motor_init();
+
+    encoder_init();
+    solenoid_init(PIOC, (1u << 22), false);
+
+    // Configure 1 ms system tick
+    SysTick_Config(84000000u / 1000u);
+
+    CanMsg message;
+    while (1)
+    {
+        if (can_rx(&message))
+        {
+            if (message.id == START_GAME_CAN_ID)
+            {
+                run_game();
+            }
         }
     }
 }
