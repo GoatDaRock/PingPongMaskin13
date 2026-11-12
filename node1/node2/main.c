@@ -74,30 +74,16 @@ void send_game_state_over_can(uint8_t lives, uint8_t score)
     message.byte[0] = lives;
     message.byte[1] = score;
 
-    if (!can_send(&message))
-    {
-        printf("ERROR: CAN send failed for game state message\r\n");
-        return;
-    }
-    printf("Sent game state over CAN: Lives=%u, Score=%u\r\n", lives, score);
+    can_tx(message);
 }
 
 void run_game(void)
 {
     CanMsg message;
 
-    uint32_t last_sample = milliseconds;
-    uint32_t score_sample = milliseconds;
-    uint32_t last_solenoid_trigger = -SOLENOID_COOLDOWN_MS; // Initialize to allow immediate trigger
-
-    // Require the beam to clear before counting
-    bool previous_blocked = true;
-    float joystick_x = 0.5f; // Initialize joystick_x to center position
-    // Game loop logic here
-    // Existing CAN and servo control
-    solenoid_update(milliseconds); // Update solenoid state based on time
-
     MotorController motor_controller;
+
+    uint32_t last_sample = milliseconds;
 
     motor_controller_init(&motor_controller, 1.0f, 1.0f, 1.0f);
 
@@ -114,9 +100,16 @@ void run_game(void)
     uint8_t lives = 3; // Initialize lives
     uint8_t score = 0; // Initialize score
 
+    uint32_t score_sample = milliseconds;
+    uint32_t last_solenoid_trigger = -SOLENOID_COOLDOWN_MS; // Initialize to allow immediate trigger
+
+    // Require the beam to clear before counting
+    bool previous_blocked = true;
+    float joystick_x = 0.5f; // Initialize joystick_x to center position
+
     while (lives > 0)
     {
-
+        solenoid_update(milliseconds); // Update solenoid state based on time
         if (can_rx(&message))
         {
             if (message.id == JOYSTICK_CAN_ID &&
@@ -162,11 +155,6 @@ void run_game(void)
             }
             float motor_speed = motor_controller_update(&motor_controller, joystick_x, normalize_encoder(encoder_value), 0.001f); // Assuming dt = 1 ms = 0.001 s
             bool solenoid_active = solenoid_is_active();
-            printf("Encoder: %f, target: %f, Motor Speed: %f, Solenoid Active: %s\r\n",
-                   normalize_encoder(encoder_value),
-                   joystick_x,
-                   motor_speed,
-                   solenoid_active ? "Yes" : "No");
             motor_set_speed(motor_speed * -1.0f);
         }
 
@@ -177,6 +165,8 @@ void run_game(void)
             send_game_state_over_can(lives, score);
         }
     }
+    solenoid_stop();
+    motor_set_speed(0.0f);
 }
 
 int main(void)
