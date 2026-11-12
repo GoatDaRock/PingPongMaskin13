@@ -35,7 +35,8 @@
 
 typedef struct CanInit CanInit;
 
-struct CanInit {
+struct CanInit
+{
     uint8_t phase2;
     uint8_t propag;
     uint8_t phase1;
@@ -46,13 +47,12 @@ struct CanInit {
 
 /* Exact timing used to match Node 1. */
 #define CAN_NODE1_125K_TIMING ((CanInit){ \
-    .phase2 = 5, \
-    .propag = 1, \
-    .phase1 = 6, \
-    .sjw    = 0, \
-    .brp    = 41, \
-    .smp    = 0 \
-})
+    .phase2 = 5,                          \
+    .propag = 1,                          \
+    .phase1 = 6,                          \
+    .sjw = 0,                             \
+    .brp = 41,                            \
+    .smp = 0})
 
 /*
  * Initialize CAN0.
@@ -60,44 +60,44 @@ struct CanInit {
  */
 void can_init(CanInit init, uint8_t rxInterrupt);
 
-
 /* Strict-aliasing-safe reinterpret-cast. */
 #define union_cast(type, x) \
-    (((union { \
-        typeof(x) a; \
-        type b; \
-    })x).b)
-
+    (((union {              \
+         typeof(x) a;       \
+         type b;            \
+     })x)                   \
+         .b)
 
 typedef struct Byte8 Byte8;
 
-struct Byte8 {
+struct Byte8
+{
     uint8_t bytes[8];
 };
 
-
 typedef struct CanMsg CanMsg;
 
-struct CanMsg {
+struct CanMsg
+{
     uint8_t id;
     uint8_t length;
 
-    union {
-        uint8_t  byte[8];
+    union
+    {
+        uint8_t byte[8];
         uint32_t dword[2];
-        Byte8    byte8;
+        Byte8 byte8;
     };
 };
 
-
 /* Send a CAN message. */
-void can_tx(CanMsg m);
+uint8_t can_tx(CanMsg m);
 
 /*
  * Receive a CAN message.
  * Returns 0 if no message is available, 1 otherwise.
  */
-uint8_t can_rx(CanMsg* m);
+uint8_t can_rx(CanMsg *m);
 
 /* Print a CAN message using printf(). */
 void can_printmsg(CanMsg m);

@@ -2,26 +2,25 @@
 #include "can.h"
 #include <stdio.h>
 
-
 #define txMailbox 0
 #define rxMailbox 1
-
 
 void can_printmsg(CanMsg m)
 {
     printf("CanMsg(id:%d, length:%d, data:{", m.id, m.length);
 
-    if (m.length) {
+    if (m.length)
+    {
         printf("%d", m.byte[0]);
     }
 
-    for (uint8_t i = 1; i < m.length; i++) {
+    for (uint8_t i = 1; i < m.length; i++)
+    {
         printf(", %d", m.byte[i]);
     }
 
     printf("})\n");
 }
-
 
 /*
  * Build the SAM3X CAN_BR register explicitly.
@@ -44,13 +43,12 @@ static uint32_t can_build_baudrate_register(CanInit init)
     reg |= ((uint32_t)(init.phase2 & 0x07u) << 0);
     reg |= ((uint32_t)(init.propag & 0x07u) << 4);
     reg |= ((uint32_t)(init.phase1 & 0x07u) << 8);
-    reg |= ((uint32_t)(init.sjw    & 0x03u) << 12);
-    reg |= ((uint32_t)(init.brp    & 0x7Fu) << 16);
-    reg |= ((uint32_t)(init.smp    & 0x01u) << 24);
+    reg |= ((uint32_t)(init.sjw & 0x03u) << 12);
+    reg |= ((uint32_t)(init.brp & 0x7Fu) << 16);
+    reg |= ((uint32_t)(init.smp & 0x01u) << 24);
 
     return reg;
 }
-
 
 void can_init(CanInit init, uint8_t rxInterrupt)
 {
@@ -107,7 +105,6 @@ void can_init(CanInit init, uint8_t rxInterrupt)
      */
     CAN0->CAN_BR = can_build_baudrate_register(init);
 
-
     /* Configure transmit mailbox. */
     CAN0->CAN_MB[txMailbox].CAN_MID = CAN_MID_MIDE;
     CAN0->CAN_MB[txMailbox].CAN_MMR = CAN_MMR_MOT_MB_TX;
@@ -118,7 +115,8 @@ void can_init(CanInit init, uint8_t rxInterrupt)
     CAN0->CAN_MB[rxMailbox].CAN_MMR = CAN_MMR_MOT_MB_RX;
     CAN0->CAN_MB[rxMailbox].CAN_MCR |= CAN_MCR_MTCR;
 
-    if (rxInterrupt) {
+    if (rxInterrupt)
+    {
         CAN0->CAN_IER |= (1u << rxMailbox);
         NVIC_EnableIRQ((IRQn_Type)ID_CAN0);
     }
@@ -127,11 +125,10 @@ void can_init(CanInit init, uint8_t rxInterrupt)
     CAN0->CAN_MR |= CAN_MR_CANEN;
 }
 
-
-void can_tx(CanMsg m)
+uint8_t can_tx(CanMsg m)
 {
-    while (!(CAN0->CAN_MB[txMailbox].CAN_MSR & CAN_MSR_MRDY)) {
-    }
+    if (!(CAN0->CAN_MB[txMailbox].CAN_MSR & CAN_MSR_MRDY))
+        return 0;
 
     /* Set message ID. */
     CAN0->CAN_MB[txMailbox].CAN_MID =
@@ -146,24 +143,19 @@ void can_tx(CanMsg m)
     CAN0->CAN_MB[txMailbox].CAN_MCR =
         ((uint32_t)m.length << CAN_MCR_MDLC_Pos) |
         CAN_MCR_MTCR;
+    return 1;
 }
 
-
-uint8_t can_rx(CanMsg* m)
+uint8_t can_rx(CanMsg *m)
 {
-    if (!(CAN0->CAN_MB[rxMailbox].CAN_MSR & CAN_MSR_MRDY)) {
+    if (!(CAN0->CAN_MB[rxMailbox].CAN_MSR & CAN_MSR_MRDY))
+    {
         return 0;
     }
 
-    m->id = (uint8_t)(
-        (CAN0->CAN_MB[rxMailbox].CAN_MID & CAN_MID_MIDvA_Msk)
-        >> CAN_MID_MIDvA_Pos
-    );
+    m->id = (uint8_t)((CAN0->CAN_MB[rxMailbox].CAN_MID & CAN_MID_MIDvA_Msk) >> CAN_MID_MIDvA_Pos);
 
-    m->length = (uint8_t)(
-        (CAN0->CAN_MB[rxMailbox].CAN_MSR & CAN_MSR_MDLC_Msk)
-        >> CAN_MSR_MDLC_Pos
-    );
+    m->length = (uint8_t)((CAN0->CAN_MB[rxMailbox].CAN_MSR & CAN_MSR_MDLC_Msk) >> CAN_MSR_MDLC_Pos);
 
     m->dword[0] = CAN0->CAN_MB[rxMailbox].CAN_MDL;
     m->dword[1] = CAN0->CAN_MB[rxMailbox].CAN_MDH;
@@ -174,7 +166,6 @@ uint8_t can_rx(CanMsg* m)
 
     return 1;
 }
-
 
 /*
  * Example CAN interrupt handler:

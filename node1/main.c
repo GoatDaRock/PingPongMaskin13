@@ -1,4 +1,6 @@
 #include <avr/io.h>
+#define F_CPU 4915200UL
+#include <util/delay.h>
 
 #include "spi.h"
 #include "oled.h"
@@ -71,17 +73,31 @@ uint8_t run_game(void)
 
     print_game_state(lives, score);
 
-    send_start_game_signal_over_can();
+    bool started = false;
+    uint8_t retry_ticks = 0;
 
     can_message_t game_state_message;
 
     while (1)
     {
-        send_joystick_position_over_can();
+        if (started)
+        {
+            send_joystick_position_over_can();
+        }
+        else if (retry_ticks == 0)
+        {
+            send_start_game_signal_over_can();
+            retry_ticks = 10;
+        }
+        if (retry_ticks > 0)
+            retry_ticks--;
         if (can_receive_message(&game_state_message))
         {
             if (game_state_message.id == GAME_STATE_CAN_ID && game_state_message.length == 2)
             {
+                if (!started && game_state_message.data[0] == 0)
+                    continue;
+                started = true;
                 lives = game_state_message.data[0];
                 score = game_state_message.data[1];
 
@@ -93,9 +109,9 @@ uint8_t run_game(void)
                 }
             }
         }
+        _delay_ms(10);
     }
 }
-
 int main(void)
 {
     /*

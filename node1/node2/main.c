@@ -32,7 +32,6 @@
 #define SOLENOID_COOLDOWN_MS 1000
 
 static volatile uint32_t milliseconds = 0;
-static uint32_t goals = 0;
 
 void SysTick_Handler(void)
 {
@@ -74,10 +73,13 @@ void send_game_state_over_can(uint8_t lives, uint8_t score)
     message.byte[0] = lives;
     message.byte[1] = score;
 
-    can_tx(message);
+    if (!can_tx(message))
+    {
+        printf("Failed to send game state over CAN\r\n");
+    }
 }
 
-void run_game(void)
+uint8_t run_game(void)
 {
     CanMsg message;
 
@@ -167,6 +169,7 @@ void run_game(void)
     }
     solenoid_stop();
     motor_set_speed(0.0f);
+    return score;
 }
 
 int main(void)
@@ -199,6 +202,8 @@ int main(void)
     // Configure 1 ms system tick
     SysTick_Config(84000000u / 1000u);
 
+    uint8_t last_score = 0;
+
     CanMsg message;
     while (1)
     {
@@ -206,7 +211,11 @@ int main(void)
         {
             if (message.id == START_GAME_CAN_ID)
             {
-                run_game();
+                last_score = run_game();
+            }
+            if (message.id == JOYSTICK_CAN_ID)
+            {
+                send_game_state_over_can(0, last_score); // if last game state got lost, send the last score to node 1
             }
         }
     }
