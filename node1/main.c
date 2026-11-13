@@ -63,7 +63,7 @@ void print_game_state(uint8_t lives, uint8_t score)
 
     oled_goto_line(4);
     oled_goto_column(0);
-    oled_printf("Lives: %u", lives);
+    oled_printf("LIVES: %u", lives);
 }
 
 uint8_t run_game(void)
@@ -93,6 +93,7 @@ uint8_t run_game(void)
             retry_ticks--;
         if (can_receive_message(&game_state_message))
         {
+			printf("Received CAN message: ID=0x%X, Length=%u\r\n", game_state_message.id, game_state_message.length);
             if (game_state_message.id == GAME_STATE_CAN_ID && game_state_message.length == 2)
             {
                 if (!started && game_state_message.data[0] == 0)
@@ -165,7 +166,7 @@ int main(void)
     io_joystick_t joystick;
     io_buttons_t buttons;
 
-    char options[5][10] = {"START GAME", "TUNE MOTOR"};
+    char options[5][12] = {"START GAME", "TUNE MOTOR"};
 
     int selected = 0;
     int number_of_options = 2;
@@ -245,6 +246,7 @@ write_display:
                 {
                     high_score = final_score;
                 }
+				goto write_display;
                 break;
             case 1:
                 printf("TUNE MOTOR selected\r\n");

@@ -33,7 +33,7 @@ void encoder_init(void)
         TC_CCR_CLKEN | TC_CCR_SWTRG;
 }
 
-uint32_t encoder_read(void)
+int32_t encoder_read(void)
 {
     return TC2->TC_CHANNEL[0].TC_CV;
 }

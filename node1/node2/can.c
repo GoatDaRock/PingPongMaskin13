@@ -106,7 +106,7 @@ void can_init(CanInit init, uint8_t rxInterrupt)
     CAN0->CAN_BR = can_build_baudrate_register(init);
 
     /* Configure transmit mailbox. */
-    CAN0->CAN_MB[txMailbox].CAN_MID = CAN_MID_MIDE;
+    CAN0->CAN_MB[txMailbox].CAN_MID = 0;
     CAN0->CAN_MB[txMailbox].CAN_MMR = CAN_MMR_MOT_MB_TX;
 
     /* Configure receive mailbox. */
@@ -132,7 +132,7 @@ uint8_t can_tx(CanMsg m)
 
     /* Set message ID. */
     CAN0->CAN_MB[txMailbox].CAN_MID =
-        CAN_MID_MIDvA(m.id) | CAN_MID_MIDE;
+        CAN_MID_MIDvA(m.id);
 
     /* Classical CAN payload is at most 8 bytes. */
     m.length = (m.length > 8) ? 8 : m.length;
