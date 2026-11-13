@@ -21,6 +21,8 @@
 #define RXB0SIDL     0x62
 #define RXB0DLC      0x65
 #define RXB0D0       0x66
+#define RXB0CTRL     0x60
+#define RXB0_ACCEPT_ALL 0x60
 
 #define RX0IF        0x01
 #define TXREQ        0x08
@@ -69,6 +71,8 @@ bool can_init(void)
 	mcp2515_write(CNF1, 0x03); //Set CNF1 register for 125kbps
     mcp2515_write(CNF2, 0xB1); 
     mcp2515_write(CNF3, 0x05); 
+
+	mcp2515_write(RXB0CTRL, RXB0_ACCEPT_ALL); //Accept all messages
 
 	mcp2515_write(CANCTRL, CAN_NORMAL_MODE);
 
